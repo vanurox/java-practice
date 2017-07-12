@@ -4,6 +4,7 @@
  * and open the template in the editor.
  */
 package nugen.view;
+
 import java.sql.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -11,13 +12,16 @@ import java.util.logging.Logger;
 import nugen.dbc.DatabaseConnection;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+
 /**
  *
  * @author shilpa
  */
 public class Person extends javax.swing.JFrame {
-    
+
     Connection con;
+    public int id;
+
     /**
      * Creates new form Person
      */
@@ -27,44 +31,41 @@ public class Person extends javax.swing.JFrame {
         con = dbc.getConnection();
         showTableData();
     }
-    
-    void showTableData(){
+
+    void showTableData() {
         try {
             int rows = 0;
-            int rowIndex=0;
-        
+            int rowIndex = 0;
+
             Statement res = con.createStatement();
             ResultSet rs = res.executeQuery("select * from persons");
-            
-            if(rs.next()){
+
+            if (rs.next()) {
                 rs.last();
                 rows = rs.getRow();
                 rs.beforeFirst();
             }
-            
+
             String[][] data = new String[rows][4];
-            
-            while(rs.next()){
-                data[rowIndex][0]= rs.getInt(1)+"";
-                data[rowIndex][1]= rs.getString(2);
-                data[rowIndex][2]= rs.getInt(3)+"";
-                data[rowIndex][3]= rs.getString(4);
+
+            while (rs.next()) {
+                data[rowIndex][0] = rs.getInt(1) + "";
+                data[rowIndex][1] = rs.getString(2);
+                data[rowIndex][2] = rs.getInt(3) + "";
+                data[rowIndex][3] = rs.getString(4);
                 rowIndex++;
             }
-            
-             String[] cols = {"ID","NAME","COURSE","CONTACT"};
-            DefaultTableModel model = new DefaultTableModel(data,cols);
+
+            String[] cols = {"ID", "NAME", "COURSE", "CONTACT"};
+            DefaultTableModel model = new DefaultTableModel(data, cols);
             personTable.setModel(model);
             rs.close();
             res.close();
-            
+
         } catch (Exception ex) {
-           JOptionPane.showMessageDialog(this,ex);
+            JOptionPane.showMessageDialog(this, ex);
         }
     }
-    
-   
-           
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -162,6 +163,11 @@ public class Person extends javax.swing.JFrame {
                 "Title 1", "Title 2", "Title 3", "Title 4"
             }
         ));
+        personTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                personTableMouseClicked(evt);
+            }
+        });
         jScrollPane1.setViewportView(personTable);
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
@@ -213,43 +219,88 @@ public class Person extends javax.swing.JFrame {
     }//GEN-LAST:event_contact_textActionPerformed
 
     private void updateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_updateActionPerformed
-        
+         String name = name_text.getText();
+        String course = course_text.getText();
+        int contact = 0;
+
+        try {
+            if (contact_text.getText().equals("") || course.equals("") || name.equals("")) {
+                JOptionPane.showMessageDialog(this, "Fields cant be empty");
+            } else {
+                contact = Integer.parseInt(contact_text.getText());
+                Statement res = con.createStatement();
+                res.execute("update persons set name='"+name+"',course='"+course+"',contact="+contact+" where id="+ id);
+
+                JOptionPane.showMessageDialog(this, "Record Updated");
+                showTableData();
+                reset();
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex);
+        }
     }//GEN-LAST:event_updateActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        // TODO add your handling code here:
+        try {
+            if(id != 0 ){
+            Statement rs =  con.createStatement();
+            rs.execute("delete from persons where id = "+id);
+            showTableData();
+            reset();
+            JOptionPane.showMessageDialog(this, "Record Deleted");
+            }
+            } catch (Exception ex) {
+           JOptionPane.showMessageDialog(this, ex);
+        }
     }//GEN-LAST:event_jButton3ActionPerformed
 
-    
-    
-    void reset(){
+    void reset() {
         name_text.setText("");
         course_text.setText("");
         contact_text.setText("");
     }
     private void submitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_submitActionPerformed
-            String name = name_text.getText();
-            String course = course_text.getText();
-            int contact = Integer.parseInt(contact_text.getText()); 
-            
-        try {
-            Statement res = con.createStatement();
-            res.execute("insert into persons(name,course,contact) values('"+ name + "','"+ course + "' ,'"+contact+"')");
-            JOptionPane.showMessageDialog(this,"Record Inserted");
-            showTableData();
-            reset();
+        String name = name_text.getText();
+        String course = course_text.getText();
+        int contact = 0;
 
+        try {
+            if (contact_text.getText().equals("") || course.equals("") || name.equals("")) {
+                JOptionPane.showMessageDialog(this, "Fields cant be empty");
+            } else {
+                contact = Integer.parseInt(contact_text.getText());
+                Statement res = con.createStatement();
+                res.execute("insert into persons(name,course,contact) values('" + name + "','" + course + "' ,'" + contact + "')");
+                JOptionPane.showMessageDialog(this, "Record Inserted");
+                showTableData();
+                reset();
+            }
         } catch (Exception ex) {
-           JOptionPane.showMessageDialog(this,ex);
+            JOptionPane.showMessageDialog(this, ex);
         }
-        
-        
+
 
     }//GEN-LAST:event_submitActionPerformed
 
     private void resetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetActionPerformed
         reset();
     }//GEN-LAST:event_resetActionPerformed
+
+    private void personTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_personTableMouseClicked
+        id = Integer.parseInt(personTable.getValueAt(personTable.getSelectedRow(), 0).toString());
+        try {
+            Statement rs = con.createStatement();
+            ResultSet res = rs.executeQuery("select * from persons where id =" + id);
+            while (res.next()) {
+                name_text.setText(res.getString(2));
+                contact_text.setText(res.getInt(3)+"");
+                 course_text.setText(res.getString(4));
+
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex);
+        }
+    }//GEN-LAST:event_personTableMouseClicked
 
     /**
      * @param args the command line arguments
